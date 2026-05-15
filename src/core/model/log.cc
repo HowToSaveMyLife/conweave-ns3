@@ -83,9 +83,18 @@ PrintList::PrintList ()
 #endif
 }
 
+HaruLogger::HaruLogger (std::ostream &os)
+  : m_os (&os)
+{
+}
 
 LogComponent::LogComponent (char const * name)
-  : m_levels (0), m_name (name)
+  : LogComponent (name, std::clog)
+{
+}
+
+LogComponent::LogComponent (char const * name, std::ostream &os)
+  : m_levels (0), m_name (name), m_Logger (os)
 {
   EnvVarCheck (name);
 
@@ -307,6 +316,19 @@ LogComponent::GetLevelLabel(const enum LogLevel level) const
     }
 }
 
+HaruLogger&
+LogComponent::GetLogger (void)
+{  
+  return m_Logger;
+}
+
+bool
+LogComponent::SetLogger (std::ostream &os)
+{  
+  m_Logger.SetStream (os);
+  return true;
+}
+
 void 
 LogComponentEnable (char const *name, enum LogLevel level)
 {
@@ -369,6 +391,30 @@ LogComponentDisableAll (enum LogLevel level)
     {
       i->second->Disable (level);
     }
+}
+
+bool
+LogComponentSetLogger (char const *name, std::ostream &os)
+{
+  ComponentList *components = GetComponentList ();
+  ComponentListI i;
+  for (i = components->begin ();
+       i != components->end ();
+       i++)
+    {
+      if (i->first.compare (name) == 0) 
+        {
+          return i->second->SetLogger (os);
+        }
+    }
+    if (i == components->end())
+      {
+  // nothing matched
+        LogComponentPrintList();
+        NS_FATAL_ERROR ("Logging component \"" << name <<
+                        "\" not found. See above for a list of available log components");
+    }
+  return false;
 }
 
 void 
@@ -579,7 +625,7 @@ LogNodePrinter LogGetNodePrinter (void)
 }
 
 ParameterLogger::ParameterLogger (std::ostream &os)
-  : std::basic_ostream<char> (os.rdbuf ()), m_itemNumber (0),
+  : m_itemNumber (0),
     m_os (os)
 {
 }

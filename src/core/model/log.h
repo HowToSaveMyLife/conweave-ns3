@@ -105,6 +105,16 @@ void LogComponentDisable (char const *name, enum LogLevel level);
  */
 void LogComponentDisableAll (enum LogLevel level);
 
+/**
+ * \param name a log component name
+ * \param os an output stream
+ * \ingroup logging
+ * 
+ * Set the output stream for a log component. By default, all log components
+ * print to std::clog. This function allows you to redirect the output of a log
+ * component to a different stream (e.g., a file).
+ */
+bool LogComponentSetLogger (char const *name, std::ostream &os);
 
 } // namespace ns3
 
@@ -158,6 +168,51 @@ void LogComponentDisableAll (enum LogLevel level);
       std::clog << "[" << g_log.GetLevelLabel (level) << "] ";  \
     }                                                           \
   
+#define HARU_LOG_COMPONENT_DEFINE(name, os)                     \
+  static ns3::LogComponent g_log = ns3::LogComponent (name, os)
+
+#define HARU_LOG_APPEND_TIME_PREFIX                             \
+  if (g_log.IsEnabled (ns3::LOG_PREFIX_TIME))                   \
+    {                                                           \
+      ns3::LogTimePrinter printer = ns3::LogGetTimePrinter ();  \
+      if (printer != 0)                                         \
+        {                                                       \
+          (*printer)(logger);                                   \
+          logger << " ";                                        \
+        }                                                       \
+    }                                                           \
+  
+
+#define HARU_LOG_APPEND_NODE_PREFIX                             \
+  if (g_log.IsEnabled (ns3::LOG_PREFIX_NODE))                   \
+    {                                                           \
+      ns3::LogNodePrinter printer = ns3::LogGetNodePrinter ();  \
+      if (printer != 0)                                         \
+        {                                                       \
+          (*printer)(logger);                                   \
+          logger << " ";                                        \
+        }                                                       \
+    }                                                           \
+  
+
+#define HARU_LOG_APPEND_FUNC_PREFIX                             \
+  if (g_log.IsEnabled (ns3::LOG_PREFIX_FUNC))                   \
+    {                                                           \
+      logger << g_log.Name () << ":" <<                         \
+      __FUNCTION__ << "(): ";                                   \
+    }                                                           \
+  
+
+#define HARU_LOG_APPEND_LEVEL_PREFIX(level)                     \
+  if (g_log.IsEnabled (ns3::LOG_PREFIX_LEVEL))                  \
+    {                                                           \
+      logger << "[" << g_log.GetLevelLabel (level) << "] ";     \
+    }                                                           \
+  
+  
+#ifndef HARU_LOG_APPEND_CONTEXT
+#define HARU_LOG_APPEND_CONTEXT
+#endif /* HARU_LOG_APPEND_CONTEXT */
 
 #ifndef NS_LOG_APPEND_CONTEXT
 #define NS_LOG_APPEND_CONTEXT
@@ -325,6 +380,35 @@ void LogComponentDisableAll (enum LogLevel level);
     }                                                           \
   while (false)
 
+/**
+ * \ingroup logging
+ * \param parameters the parameters to output.
+ * 
+ * Same as NS_LOG_FUNCTION, but parameters are separated by ", " and no operator<< is needed.
+ * Typical usage looks like:
+ * \code
+ * NS_LOG_FUNCTION_COMMA (aNumber, anotherNumber);
+ * \endcode
+ * And the output will look like:
+ * \code
+ * Component:Function (aNumber, anotherNumber)
+ * \endcode
+ */
+#define NS_LOG_FUNCTION_COMMA(...)                              \
+  do                                                            \
+    {                                                           \
+      if (g_log.IsEnabled (ns3::LOG_FUNCTION))                  \
+        {                                                       \
+          NS_LOG_APPEND_TIME_PREFIX;                            \
+          NS_LOG_APPEND_NODE_PREFIX;                            \
+          NS_LOG_APPEND_CONTEXT;                                \
+          std::clog << g_log.Name () << ":"                     \
+                    << __FUNCTION__ << "(";                     \
+          ns3::ParameterLogger (std::clog).Print(__VA_ARGS__);  \
+          std::clog << ")" << std::endl;                        \
+        }                                                       \
+    }                                                           \
+  while (false)
 
 /**
  * \ingroup logging
@@ -346,6 +430,98 @@ void LogComponentDisableAll (enum LogLevel level);
     {                                   \
       std::clog << msg << std::endl;    \
     }                                   \
+  while (false)
+
+
+/**
+ * Logging to the selected ostream. 
+ */
+#define HARU_LOG(level, msg) \
+  do                                                            \
+    {                                                           \
+      if (g_log.IsEnabled (level))                              \
+        {                                                       \
+          ns3::HaruLogger& logger = g_log.GetLogger();     \
+          HARU_LOG_APPEND_TIME_PREFIX;                          \
+          HARU_LOG_APPEND_NODE_PREFIX;                          \
+          HARU_LOG_APPEND_CONTEXT;                              \
+          HARU_LOG_APPEND_FUNC_PREFIX;                          \
+          HARU_LOG_APPEND_LEVEL_PREFIX (level);                 \
+          logger << msg << std::endl;                           \
+        }                                                       \
+    }                                                           \
+  while (false)
+
+#define HARU_LOG_ERROR(msg) \
+  HARU_LOG (ns3::LOG_ERROR, msg)
+
+#define HARU_LOG_WARN(msg) \
+  HARU_LOG (ns3::LOG_WARN, msg)
+
+#define HARU_LOG_DEBUG(msg) \
+  HARU_LOG (ns3::LOG_DEBUG, msg)
+
+#define HARU_LOG_INFO(msg) \
+  HARU_LOG (ns3::LOG_INFO, msg)
+
+#define HARU_LOG_FUNCTION_NOARGS()                              \
+  do                                                            \
+    {                                                           \
+      if (g_log.IsEnabled (ns3::LOG_FUNCTION))                  \
+        {                                                       \
+          ns3::HaruLogger& logger = g_log.GetLogger();          \
+          HARU_LOG_APPEND_TIME_PREFIX;                          \
+          HARU_LOG_APPEND_NODE_PREFIX;                          \
+          HARU_LOG_APPEND_CONTEXT;                              \
+          logger << g_log.Name () << ":"                        \
+                 << __FUNCTION__ << "()" << std::endl;          \
+        }                                                       \
+    }                                                           \
+  while (false)
+
+#define HARU_LOG_FUNCTION(parameters)                           \
+  do                                                            \
+    {                                                           \
+      if (g_log.IsEnabled (ns3::LOG_FUNCTION))                  \
+        {                                                       \
+          ns3::HaruLogger& logger = g_log.GetLogger();          \
+          HARU_LOG_APPEND_TIME_PREFIX;                          \
+          HARU_LOG_APPEND_NODE_PREFIX;                          \
+          HARU_LOG_APPEND_CONTEXT;                              \
+          logger << g_log.Name () << ":"                        \
+                 << __FUNCTION__ << "(";                        \
+          ns3::ParameterLogger (logger.GetStream()) << parameters;\
+          logger << ")" << std::endl;                           \
+        }                                                       \
+    }                                                           \
+  while (false)
+
+#define HARU_LOG_FUNCTION_COMMA(...)                            \
+  do                                                            \
+    {                                                           \
+      if (g_log.IsEnabled (ns3::LOG_FUNCTION))                  \
+        {                                                       \
+          ns3::HaruLogger& logger = g_log.GetLogger();          \
+          HARU_LOG_APPEND_TIME_PREFIX;                          \
+          HARU_LOG_APPEND_NODE_PREFIX;                          \
+          HARU_LOG_APPEND_CONTEXT;                              \
+          logger << g_log.Name () << ":"                        \
+                 << __FUNCTION__ << "(";                        \
+          ns3::ParameterLogger (logger.GetStream()).Print(__VA_ARGS__);  \
+          logger << ")" << std::endl;                           \
+        }                                                       \
+    }                                                           \
+  while (false)
+
+#define HARU_LOG_LOGIC(msg) \
+  HARU_LOG (ns3::LOG_LOGIC, msg)
+
+#define HARU_LOG_UNCOND(msg)                                    \
+  do                                                            \
+    {                                                           \
+      ns3::HaruLogger& logger = g_log.GetLogger();              \
+      logger << msg << std::endl;                               \
+    }                                                           \
   while (false)
 
 #else /* LOG_ENABLE */
@@ -383,9 +559,30 @@ void LogSetNodePrinter (LogNodePrinter);
 LogNodePrinter LogGetNodePrinter (void);
 
 
+class HaruLogger {
+public:
+  HaruLogger (std::ostream &os);
+  template<typename T>
+  HaruLogger& operator<< (T param)
+  {
+    (*m_os) << param;
+    return *this;
+  }
+  HaruLogger& operator<< (std::ostream& (*manip)(std::ostream&))
+  {
+    (*m_os) << manip;
+    return *this;
+  }
+  std::ostream& GetStream (void) { return *m_os; }
+  bool SetStream (std::ostream &os) { m_os = &os; return true; }
+private:
+  std::ostream *m_os;
+};
+
 class LogComponent {
 public:
   LogComponent (char const *name);
+  LogComponent (char const *name, std::ostream &os);
   void EnvVarCheck (char const *name);
   bool IsEnabled (enum LogLevel level) const;
   bool IsNoneEnabled (void) const;
@@ -393,12 +590,15 @@ public:
   void Disable (enum LogLevel level);
   char const *Name (void) const;
   std::string GetLevelLabel(const enum LogLevel level) const;
+  HaruLogger& GetLogger (void);
+  bool SetLogger (std::ostream &os);
 private:
   int32_t     m_levels;
   char const *m_name;
+  HaruLogger m_Logger;
 };
 
-class ParameterLogger : public std::ostream
+class ParameterLogger
 {
   int m_itemNumber;
   std::ostream &m_os;
@@ -419,6 +619,15 @@ public:
       }
     m_itemNumber++;
     return *this;
+  }
+  template<typename First, typename ... Rest>
+  void Print(First first, Rest ... rest)
+  {
+    m_os << first;
+    if (sizeof...(rest) > 0) {
+        m_os << ", ";
+    }
+    Print(rest...);
   }
 };
 
