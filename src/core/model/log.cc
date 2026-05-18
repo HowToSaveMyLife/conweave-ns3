@@ -94,7 +94,7 @@ LogComponent::LogComponent (char const * name)
 }
 
 LogComponent::LogComponent (char const * name, std::ostream &os)
-  : m_levels (0), m_name (name), m_Logger (os)
+  : m_levels (0), m_name (name), m_Logger (&os)
 {
   EnvVarCheck (name);
 
@@ -316,16 +316,29 @@ LogComponent::GetLevelLabel(const enum LogLevel level) const
     }
 }
 
-HaruLogger&
-LogComponent::GetLogger (void)
-{  
-  return m_Logger;
+// HaruLogger&
+// LogComponent::GetLogger (void)
+// {  
+//   return haru_Logger;
+// }
+
+// bool
+// LogComponent::SetLogger (std::ostream &os)
+// {  
+//   haru_Logger.SetStream (os);
+//   return true;
+// }
+
+std::ostream&
+LogComponent::GetStream (void)
+{
+  return *m_Logger;
 }
 
 bool
-LogComponent::SetLogger (std::ostream &os)
-{  
-  m_Logger.SetStream (os);
+LogComponent::SetStream (std::ostream &os)
+{
+  m_Logger = &os;
   return true;
 }
 
@@ -404,7 +417,7 @@ LogComponentSetLogger (char const *name, std::ostream &os)
     {
       if (i->first.compare (name) == 0) 
         {
-          return i->second->SetLogger (os);
+          return i->second->SetStream (os);
         }
     }
     if (i == components->end())

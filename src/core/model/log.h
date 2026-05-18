@@ -130,8 +130,16 @@ bool LogComponentSetLogger (char const *name, std::ostream &os);
  * ns3::LogComponentDisable functions or with the NS_LOG
  * environment variable.
  */
-#define NS_LOG_COMPONENT_DEFINE(name)                           \
-  static ns3::LogComponent g_log = ns3::LogComponent (name)
+#define NS_LOG_COMPONENT_DEFINE_1(name) \
+  static ns3::LogComponent g_log = ns3::LogComponent(name)
+
+#define NS_LOG_COMPONENT_DEFINE_2(name, os) \
+  static ns3::LogComponent g_log = ns3::LogComponent(name, os)
+
+#define GET_MACRO(_1, _2, NAME, ...) NAME
+
+#define NS_LOG_COMPONENT_DEFINE(...) \
+  GET_MACRO(__VA_ARGS__, NS_LOG_COMPONENT_DEFINE_2, NS_LOG_COMPONENT_DEFINE_1)(__VA_ARGS__)
 
 #define NS_LOG_APPEND_TIME_PREFIX                               \
   if (g_log.IsEnabled (ns3::LOG_PREFIX_TIME))                   \
@@ -139,8 +147,8 @@ bool LogComponentSetLogger (char const *name, std::ostream &os);
       ns3::LogTimePrinter printer = ns3::LogGetTimePrinter ();  \
       if (printer != 0)                                         \
         {                                                       \
-          (*printer)(std::clog);                               \
-          std::clog << " ";                                     \
+          (*printer)(logger);                                   \
+          logger << " ";                                        \
         }                                                       \
     }
 
@@ -150,24 +158,25 @@ bool LogComponentSetLogger (char const *name, std::ostream &os);
       ns3::LogNodePrinter printer = ns3::LogGetNodePrinter ();  \
       if (printer != 0)                                         \
         {                                                       \
-          (*printer)(std::clog);                               \
-          std::clog << " ";                                     \
+          (*printer)(logger);                                   \
+          logger << " ";                                        \
         }                                                       \
     }
 
 #define NS_LOG_APPEND_FUNC_PREFIX                               \
   if (g_log.IsEnabled (ns3::LOG_PREFIX_FUNC))                   \
     {                                                           \
-      std::clog << g_log.Name () << ":" <<                      \
-      __FUNCTION__ << "(): ";                                 \
+      logger << g_log.Name () << ":" <<                         \
+      __FUNCTION__ << "(): ";                                   \
     }                                                           \
 
 #define NS_LOG_APPEND_LEVEL_PREFIX(level)                       \
   if (g_log.IsEnabled (ns3::LOG_PREFIX_LEVEL))                  \
     {                                                           \
-      std::clog << "[" << g_log.GetLevelLabel (level) << "] ";  \
+      logger << "[" << g_log.GetLevelLabel (level) << "] ";     \
     }                                                           \
   
+/*
 #define HARU_LOG_COMPONENT_DEFINE(name, os)                     \
   static ns3::LogComponent g_log = ns3::LogComponent (name, os)
 
@@ -210,9 +219,10 @@ bool LogComponentSetLogger (char const *name, std::ostream &os);
     }                                                           \
   
   
-#ifndef HARU_LOG_APPEND_CONTEXT
-#define HARU_LOG_APPEND_CONTEXT
-#endif /* HARU_LOG_APPEND_CONTEXT */
+*/
+// #ifndef HARU_LOG_APPEND_CONTEXT
+// #define HARU_LOG_APPEND_CONTEXT
+// #endif /* HARU_LOG_APPEND_CONTEXT */
 
 #ifndef NS_LOG_APPEND_CONTEXT
 #define NS_LOG_APPEND_CONTEXT
@@ -274,12 +284,13 @@ bool LogComponentSetLogger (char const *name, std::ostream &os);
     {                                                           \
       if (g_log.IsEnabled (level))                              \
         {                                                       \
+          std::ostream& logger = g_log.GetStream();             \
           NS_LOG_APPEND_TIME_PREFIX;                            \
           NS_LOG_APPEND_NODE_PREFIX;                            \
           NS_LOG_APPEND_CONTEXT;                                \
           NS_LOG_APPEND_FUNC_PREFIX;                            \
           NS_LOG_APPEND_LEVEL_PREFIX (level);                   \
-          std::clog << msg << std::endl;                        \
+          logger << msg << std::endl;                           \
         }                                                       \
     }                                                           \
   while (false)
@@ -333,10 +344,11 @@ bool LogComponentSetLogger (char const *name, std::ostream &os);
     {                                                           \
       if (g_log.IsEnabled (ns3::LOG_FUNCTION))                  \
         {                                                       \
+          std::ostream& logger = g_log.GetStream();             \
           NS_LOG_APPEND_TIME_PREFIX;                            \
           NS_LOG_APPEND_NODE_PREFIX;                            \
           NS_LOG_APPEND_CONTEXT;                                \
-          std::clog << g_log.Name () << ":"                     \
+          logger << g_log.Name () << ":"                        \
                     << __FUNCTION__ << "()" << std::endl;       \
         }                                                       \
     }                                                           \
@@ -369,13 +381,14 @@ bool LogComponentSetLogger (char const *name, std::ostream &os);
     {                                                           \
       if (g_log.IsEnabled (ns3::LOG_FUNCTION))                  \
         {                                                       \
+          std::ostream& logger = g_log.GetStream();             \
           NS_LOG_APPEND_TIME_PREFIX;                            \
           NS_LOG_APPEND_NODE_PREFIX;                            \
           NS_LOG_APPEND_CONTEXT;                                \
-          std::clog << g_log.Name () << ":"                     \
+          logger << g_log.Name () << ":"                        \
                     << __FUNCTION__ << "(";                     \
-          ns3::ParameterLogger (std::clog) << parameters;      \
-          std::clog << ")" << std::endl;                        \
+          ns3::ParameterLogger (logger) << parameters;          \
+          logger << ")" << std::endl;                           \
         }                                                       \
     }                                                           \
   while (false)
@@ -399,13 +412,14 @@ bool LogComponentSetLogger (char const *name, std::ostream &os);
     {                                                           \
       if (g_log.IsEnabled (ns3::LOG_FUNCTION))                  \
         {                                                       \
+          std::ostream& logger = g_log.GetStream();          \
           NS_LOG_APPEND_TIME_PREFIX;                            \
           NS_LOG_APPEND_NODE_PREFIX;                            \
           NS_LOG_APPEND_CONTEXT;                                \
-          std::clog << g_log.Name () << ":"                     \
+          logger << g_log.Name () << ":"                        \
                     << __FUNCTION__ << "(";                     \
-          ns3::ParameterLogger (std::clog).Print(__VA_ARGS__);  \
-          std::clog << ")" << std::endl;                        \
+          ns3::ParameterLogger (logger).Print(__VA_ARGS__);  \
+          logger << ")" << std::endl;                           \
         }                                                       \
     }                                                           \
   while (false)
@@ -432,16 +446,25 @@ bool LogComponentSetLogger (char const *name, std::ostream &os);
     }                                   \
   while (false)
 
+#define NS_LOG_UNCOND_REDIR(msg)        \
+  do                                    \
+    {                                   \
+      std::ostream& logger = g_log.GetStream();\
+      logger << msg << std::endl;       \
+    }                                   \
+  while (false)
+
 
 /**
  * Logging to the selected ostream. 
  */
+/*
 #define HARU_LOG(level, msg) \
   do                                                            \
     {                                                           \
       if (g_log.IsEnabled (level))                              \
         {                                                       \
-          ns3::HaruLogger& logger = g_log.GetLogger();     \
+          ns3::HaruLogger& logger = g_log.GetLogger();          \
           HARU_LOG_APPEND_TIME_PREFIX;                          \
           HARU_LOG_APPEND_NODE_PREFIX;                          \
           HARU_LOG_APPEND_CONTEXT;                              \
@@ -523,6 +546,7 @@ bool LogComponentSetLogger (char const *name, std::ostream &os);
       logger << msg << std::endl;                               \
     }                                                           \
   while (false)
+*/
 
 #else /* LOG_ENABLE */
 
@@ -590,12 +614,15 @@ public:
   void Disable (enum LogLevel level);
   char const *Name (void) const;
   std::string GetLevelLabel(const enum LogLevel level) const;
-  HaruLogger& GetLogger (void);
-  bool SetLogger (std::ostream &os);
+  // HaruLogger& GetLogger (void);
+  // bool SetLogger (std::ostream &os);
+  std::ostream& GetStream (void);
+  bool SetStream (std::ostream &os);
 private:
   int32_t     m_levels;
   char const *m_name;
-  HaruLogger m_Logger;
+  // HaruLogger  haru_Logger;
+  std::ostream *m_Logger;
 };
 
 class ParameterLogger
