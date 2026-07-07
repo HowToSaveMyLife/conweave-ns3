@@ -17,7 +17,7 @@ class SwitchNode : public Node {
     static const unsigned qCnt = 8;    // Number of queues/priorities used
     static const unsigned pCnt = 128;  // port 0 is not used so + 1	// Number of ports used
     uint32_t m_ecmpSeed;
-    std::unordered_map<uint32_t, std::vector<int> >
+    std::unordered_map<uint32_t, std::vector<uint32_t> >
         m_rtTable;  // map from ip address (u32) to possible ECMP port (index of dev)
 
     // monitor uplinks
@@ -42,20 +42,20 @@ class SwitchNode : public Node {
     /*----- Load balancer -----*/
     // Flow ECMP (lb_mode = 0)
     uint32_t DoLbFlowECMP(Ptr<const Packet> p, const CustomHeader &ch,
-                          const std::vector<int> &nexthops);
+                          const std::vector<uint32_t> &nexthops);
     // DRILL (lb_mode = 2)
     uint32_t DoLbDrill(Ptr<const Packet> p, const CustomHeader &ch,
-                       const std::vector<int> &nexthops);     // choose egress port
+                       const std::vector<uint32_t> &nexthops);     // choose egress port
     uint32_t m_drill_candidate;                               // always 2 (power of two)
     std::map<uint32_t, uint32_t> m_previousBestInterfaceMap;  // <dip, previousBestInterface>
     uint32_t CalculateInterfaceLoad(uint32_t interface);      // Get the load of a interface
     // Conga (lb_mode = 3)
-    uint32_t DoLbConga(Ptr<Packet> p, CustomHeader &ch, const std::vector<int> &nexthops);
+    uint32_t DoLbConga(Ptr<Packet> p, CustomHeader &ch, const std::vector<uint32_t> &nexthops);
     // Conga (lb_mode = 6)
-    uint32_t DoLbLetflow(Ptr<Packet> p, CustomHeader &ch, const std::vector<int> &nexthops);
+    uint32_t DoLbLetflow(Ptr<Packet> p, CustomHeader &ch, const std::vector<uint32_t> &nexthops);
     // ConWeave (lb_mode = 9)
     uint32_t DoLbConWeave(Ptr<const Packet> p, const CustomHeader &ch,
-                           const std::vector<int> &nexthops);  // dummy
+                           const std::vector<uint32_t> &nexthops);  // dummy
 
    public:
     // Ptr<BroadcomNode> m_broadcom;

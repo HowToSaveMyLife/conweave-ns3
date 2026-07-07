@@ -18,6 +18,8 @@
 
 namespace ns3 {
 
+NS_LOG_COMPONENT_DEFINE("SwitchNode");
+
 TypeId SwitchNode::GetTypeId(void) {
     static TypeId tid =
         TypeId("ns3::SwitchNode")
@@ -59,7 +61,7 @@ SwitchNode::SwitchNode() {
  * @brief Load Balancing
  */
 uint32_t SwitchNode::DoLbFlowECMP(Ptr<const Packet> p, const CustomHeader &ch,
-                                  const std::vector<int> &nexthops) {
+                                  const std::vector<uint32_t> &nexthops) {
     // pick one next hop based on hash
     union {
         uint8_t u8[4 + 4 + 2 + 2];
@@ -86,13 +88,13 @@ uint32_t SwitchNode::DoLbFlowECMP(Ptr<const Packet> p, const CustomHeader &ch,
 }
 
 /*-----------------CONGA-----------------*/
-uint32_t SwitchNode::DoLbConga(Ptr<Packet> p, CustomHeader &ch, const std::vector<int> &nexthops) {
+uint32_t SwitchNode::DoLbConga(Ptr<Packet> p, CustomHeader &ch, const std::vector<uint32_t> &nexthops) {
     return DoLbFlowECMP(p, ch, nexthops);  // flow ECMP (dummy)
 }
 
 /*-----------------Letflow-----------------*/
 uint32_t SwitchNode::DoLbLetflow(Ptr<Packet> p, CustomHeader &ch,
-                                 const std::vector<int> &nexthops) {
+                                 const std::vector<uint32_t> &nexthops) {
     if (m_isToR && nexthops.size() == 1) {
         if (m_isToR_hostIP.find(ch.sip) != m_isToR_hostIP.end() &&
             m_isToR_hostIP.find(ch.dip) != m_isToR_hostIP.end()) {
@@ -120,7 +122,7 @@ uint32_t SwitchNode::CalculateInterfaceLoad(uint32_t interface) {
 }
 
 uint32_t SwitchNode::DoLbDrill(Ptr<const Packet> p, const CustomHeader &ch,
-                               const std::vector<int> &nexthops) {
+                               const std::vector<uint32_t> &nexthops) {
     // find the Egress (output) link with the smallest local Egress Queue length
     uint32_t leastLoadInterface = 0;
     uint32_t leastLoad = std::numeric_limits<uint32_t>::max();
@@ -148,7 +150,7 @@ uint32_t SwitchNode::DoLbDrill(Ptr<const Packet> p, const CustomHeader &ch,
 
 /*------------------ConWeave Dummy ----------------*/
 uint32_t SwitchNode::DoLbConWeave(Ptr<const Packet> p, const CustomHeader &ch,
-                                  const std::vector<int> &nexthops) {
+                                  const std::vector<uint32_t> &nexthops) {
     return DoLbFlowECMP(p, ch, nexthops);  // flow ECMP (dummy)
 }
 /*----------------------------------*/
